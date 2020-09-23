@@ -35,6 +35,11 @@ public class MainActivity extends AppCompatActivity {
     EditText textEditAno;
     List<BolsaFamilia> bolsas;
 
+    double mediaValores = 0;
+    double maiorMes = 0;
+    String medias = "";
+    //int j = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,11 +49,12 @@ public class MainActivity extends AppCompatActivity {
         textResultado = findViewById(R.id.textResult);
         textEditCodigo = findViewById(R.id.textEditCodigo);
         textEditAno = findViewById(R.id.textEditAno);
+
     }
 
     public void solicitarDadoGoverno(View view) {
-
-        RequestQueue queue = Volley.newRequestQueue(this);
+        bolsas.clear();
+        final RequestQueue queue = Volley.newRequestQueue(this);
 
         String codigo = textEditCodigo.getText().toString();
         String ano = textEditAno.getText().toString();
@@ -61,19 +67,20 @@ public class MainActivity extends AppCompatActivity {
             textResultado.setText("Executando..");
         }
 
-        for (int i = 1; i <= 3; i++) {
-
-           /* String mes = "";
+        for (int i = 1; i <= 12; i++) {
+            // j = i;
+            String mes = "";
             if (i < 10) {
                 mes = "0" + i;
-            }else{
+            } else {
                 mes = "" + i;
-            }*/
-            String mes = "0";
-            mes = "0" + i;
+            }
+            //String mes = "0" + i;
 
             String url = "http://www.transparencia.gov.br/api-de-dados/bolsa-familia-por-municipio?mesAno=" + ano + mes + "&codigoIbge=" + codigo + "&pagina=1";
 
+            //j = i;
+            final int finalI = i;
             JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                     new Response.Listener<JSONArray>() {
                         @Override
@@ -87,12 +94,14 @@ public class MainActivity extends AppCompatActivity {
 
                                 bolsaf.setNomeMunicipio(municipio_obj.getString("nomeIBGE"));
                                 bolsaf.setEstado(municipio_obj.getJSONObject("uf").getString("sigla"));
-                                //bolsaf.setEstadoNome(municipio_obj.getJSONObject("uf").getString("nome"));
                                 bolsaf.setBeneficiarios(result.getInt("quantidadeBeneficiados"));
                                 bolsaf.setTotalPago(result.getDouble("valor"));
 
                                 bolsas.add(bolsaf);
-                                textResultado.setText(bolsas.toString());
+
+                                if (finalI == 12) {
+                                    Medias();
+                                }
 
                             } catch (JSONException e) {
                                 textResultado.setText(e.getMessage());
@@ -109,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public Map<String, String> getHeaders() throws AuthFailureError {
                     Map<String, String> params = new HashMap<String, String>();
-                    params.put("chave-api-dados", "50fe0aef09277b29412ab25a804715a0");
+                    params.put("chave-api-dados", "6b7732184988d4ef31620706ce4d3f47");
 
                     return params;
                 }
@@ -119,8 +128,40 @@ public class MainActivity extends AppCompatActivity {
             queue.add(request);
 
         }
-
 //////////////
+    }
+
+    public void Medias() {
+        //se deixar i <= bolsas.size() da erro de index out of bounds
+        for (int i = 1; i < bolsas.size(); ++i) {
+
+            BolsaFamilia obj = (BolsaFamilia) bolsas.get(i);
+
+            if (i == 1) {
+                medias += "Municipio: " + obj.getNomeMunicipio() + "\n";
+                medias += "Estado: " + obj.getEstado() + "\n";
+                mediaValores += obj.getTotalPago();
+                maiorMes += obj.getTotalPago();
+
+            }
+            medias += "Beneficiados no mês " + i + " :" + obj.getBeneficiarios() + "\n";
+            medias += "Valor pago no mês" + i + " :" + obj.getTotalPago() + "\n\n";
+            mediaValores += obj.getTotalPago();
+
+
+            if (maiorMes < obj.getTotalPago()) {
+                maiorMes = obj.getTotalPago();
+            }
+
+            if (i == 11) {
+                medias += "Média dos valores pagos no ano: " + mediaValores / bolsas.size() + "\n";
+                medias += "Maior valor pago do ano " + maiorMes;
+            }
+            textResultado.setText(medias);
+
+
+
+        }
 
     }
 }
